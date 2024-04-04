@@ -4,6 +4,7 @@
 \setdocauthor{Stephan Bökelmann}
 \setdocemail{sboekelmann@ep1.rub.de}
 \setdocinstitute{AG Physik der Hadronen und Kerne}
+\usepackage{listings}
 
 \begin{document}
 
@@ -17,7 +18,7 @@ Environment variables provide a dynamic means to influence the behavior of proce
 \begin{aufgabe}
 Analyze the following program, which sets an environment variable and then calls \texttt{fork()}. Describe what happens when the parent process sets the environment variable for the child process. How does the child process behave in regard to the set environment variable?
 
-\begin{verbatim}
+\begin{lstlisting}
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -48,7 +49,7 @@ int main() {
 
     return 0;
 }
-\end{verbatim}
+\end{lstlisting}
 The \texttt{fork()} system call is pivotal in process management, enabling the creation of new processes by duplicating the calling process. This mechanism is instrumental in the multitasking capabilities of Unix-like systems, allowing for the concurrent execution of multiple tasks.
 
 Complementing \texttt{fork()}, the \texttt{exec()} family of functions plays a critical role in process behavior by replacing the current process image with a new program image. This allows for the dynamic execution of different programs within the context of a single process, facilitating a wide range of tasks from simple command execution to complex inter-process communication scenarios.
