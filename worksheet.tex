@@ -1,27 +1,127 @@
 \documentclass{dcbl/challenge}
 
-\setdoctitle{Der Titel meines Dokuments}
+\setdoctitle{Using Environment Variables in C Programs}
 \setdocauthor{Stephan Bökelmann}
 \setdocemail{sboekelmann@ep1.rub.de}
 \setdocinstitute{AG Physik der Hadronen und Kerne}
 
-
 \begin{document}
 
-Jedes Challenge-Blatt beginnt mit einer kurzen Einleitung, die einen Kontext für den jeweiligen Zettel setzt. 
+We now want to explore the use of environment variables in C programming, particularly through the use of \texttt{fork()} and \texttt{exec()} system calls. Understanding these concepts is crucial for managing processes in Unix-like systems effectively.
+In the realm of Unix-like operating systems, the proficient management of processes forms the cornerstone of effective system programming. Central to this discipline is the adept use of environment variables, alongside the strategic deployment of system calls such as \texttt{fork()} and \texttt{exec()}. These elements serve not merely as tools but as foundational building blocks that allow for the nuanced control and inter-process communication that characterize robust software systems.
 
-\section*{Aufgaben}
+Environment variables provide a dynamic means to influence the behavior of processes at runtime. They enable configuration settings and important parameters to be passed seamlessly across parent and child processes, offering a flexible mechanism for adapting process behavior without altering code.
+
+\section*{Tasks}
+
 \begin{aufgabe}
-    Löse die Gleichung $x^2 - 5x + 6 = 0$.
+Analyze the following program, which sets an environment variable and then calls \texttt{fork()}. Describe what happens when the parent process sets the environment variable for the child process. How does the child process behave in regard to the set environment variable?
+
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h> // Include for strcmp function
+
+int main() {
+    // Set an environment variable
+    setenv("FORK_MODE", "child", 1);
+
+    // Fork the process
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        // Fork failed
+        perror("fork");
+        return 1;
+    } else if (pid == 0) {
+        // Child process
+        if (getenv("FORK_MODE") && strcmp(getenv("FORK_MODE"), "child") == 0) {
+            printf("Child process: operating in child mode.\n");
+        } else {
+            printf("Child process: operating in default mode.\n");
+        }
+    } else {
+        // Parent process
+        printf("Parent process: created a child process.\n");
+    }
+
+    return 0;
+}
+\end{verbatim}
+The \texttt{fork()} system call is pivotal in process management, enabling the creation of new processes by duplicating the calling process. This mechanism is instrumental in the multitasking capabilities of Unix-like systems, allowing for the concurrent execution of multiple tasks.
+
+Complementing \texttt{fork()}, the \texttt{exec()} family of functions plays a critical role in process behavior by replacing the current process image with a new program image. This allows for the dynamic execution of different programs within the context of a single process, facilitating a wide range of tasks from simple command execution to complex inter-process communication scenarios.
 \end{aufgabe}
 
-\begin{aufgabe}[Für Fortgeschrittene]
-    Beweise den Satz des Pythagoras.
+\begin{aufgabe}
+Now consider a program that sets an environment variable and then uses \texttt{exec()} to replace the current process with a new process. The new process will print the environment variable set by the original process. First, compile the target program named \textit{printenv.c}, which is intended to be executed by \texttt{exec()}. 
+
+Target program \texttt{(printenv.c)}:
+
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    // Access an environment variable
+    char *env = getenv("MY_ENV_VAR");
+    if (env) {
+        printf("Environment variable MY_ENV_VAR: %s\n", env);
+    } else {
+        printf("Environment variable MY_ENV_VAR is not set.\n");
+    }
+    return 0;
+}
+\end{verbatim}
+
+Main program:
+
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main() {
+    // Set an environment variable
+    setenv("MY_ENV_VAR", "Hello, world!", 1);
+
+    // Replace the current process with a new process
+    char *args[] = {"./printenv", NULL};
+    execvp(args[0], args);
+
+    // If execvp returns, it must have failed
+    perror("execvp");
+    return 1;
+}
+\end{verbatim}
+
+Describe the interaction between the environment variable, the main program, and the target program. Explain how \textit{execvp} works in this context.
 \end{aufgabe}
 
-\section*{Anmerkungen}
+\section*{Notes}
 \begin{enumerate}
-    \item Link zu einem YouTube-Video: \url{https://www.youtube.com}
+    \item Sometime \texttt{execvp} can be a bit tricky. To help you out here is an explaination what the command does:
+    Behavior: When \texttt{execvp} is called, the current process is completely replaced by the new program specified. This means the new program starts with a fresh stack, heap, and \textit{with some exceptions} data segments, but retains the same process ID and most other attributes \textit{like file descriptors}. Essentially, \texttt{execvp} does not create a new process; instead, it transforms the existing process into a new one.
+
+    Return Value: If \texttt{execvp} is successful, it does not return, because the current process image is replaced by the new program. If there's an error \textit{for example, if the specified file cannot be executed}, \texttt{execvp} returns -1, and errno is set to indicate the error.
+    
+    Use Case: \texttt{execvp} is useful when you want to execute another program or script from your C program and you need the called program to be searched within the system's PATH. It's commonly used after a \texttt{fork()} system call in a child process, allowing the child to execute a different program while the parent continues its execution.
+
+    Example: 
+    \begin{verbatim}
+        #include <stdio.h>
+        #include <unistd.h>
+
+        int main() {
+            char *args[] = {"echo", "Hello, world!", NULL};
+            execvp(args[0], args);
+            perror("execvp"); // This will only be executed if execvp fails
+            return 1;
+        }
+    \end{verbatim}
+
 \end{enumerate}
 
 \end{document}
+
